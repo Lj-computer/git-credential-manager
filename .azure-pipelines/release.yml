@@ -424,6 +424,8 @@ extends:
                     script: |
                       mkdir -p $(Build.ArtifactStagingDirectory)/tosign
                       cd $(Build.ArtifactStagingDirectory)/installers-presign
+                      ls -l .
+                      tree .
                       zip -rX $(Build.ArtifactStagingDirectory)/tosign/installers-presign.zip *.pkg
                 - task: EsrpCodeSigning@5
                   condition: and(succeeded(), eq('${{ parameters.esrp }}', true))
@@ -466,6 +468,8 @@ extends:
                     script: |
                       mkdir -p $(Build.ArtifactStagingDirectory)/tosign
                       cd $(Build.ArtifactStagingDirectory)/installers
+                      ls -l .
+                      tree .
                       zip -rX $(Build.ArtifactStagingDirectory)/tosign/installers.zip *.pkg
                 - task: EsrpCodeSigning@5
                   condition: and(succeeded(), eq('${{ parameters.esrp }}', true))
