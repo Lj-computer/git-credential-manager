@@ -415,7 +415,7 @@ extends:
                       --version="$(version)" \
                       --runtime="${{ dim.runtime }}" \
                       --package-path="$(Build.ArtifactStagingDirectory)/pkg" \
-                      --output="$(Build.ArtifactStagingDirectory)/installers/gcm-${{ dim.runtime }}-$(version).pkg"
+                      --output="$(Build.ArtifactStagingDirectory)/installers-presign/gcm-${{ dim.runtime }}-$(version).pkg"
                 # ESRP code signing for macOS requires the files be packaged in a zip file first
                 - task: Bash@3
                   displayName: 'Prepare installer package for signing'
@@ -423,8 +423,8 @@ extends:
                     targetType: inline
                     script: |
                       mkdir -p $(Build.ArtifactStagingDirectory)/tosign
-                      cd $(Build.ArtifactStagingDirectory)/installers
-                      zip -rX $(Build.ArtifactStagingDirectory)/tosign/installers.zip *.pkg
+                      cd $(Build.ArtifactStagingDirectory)/installers-presign
+                      zip -rX $(Build.ArtifactStagingDirectory)/tosign/installers-presign.zip *.pkg
                 - task: EsrpCodeSigning@5
                   condition: and(succeeded(), eq('${{ parameters.esrp }}', true))
                   displayName: 'Sign installer package'
@@ -437,7 +437,7 @@ extends:
                     authSignCertName: '$(esrpSignReqCertName)'
                     serviceEndpointUrl: '$(esrpEndpointUrl)'
                     folderPath: '$(Build.ArtifactStagingDirectory)/tosign'
-                    pattern: 'installers.zip'
+                    pattern: 'installers-presign.zip'
                     useMinimatch: true
                     signConfigType: inlineSignParams
                     inlineOperation: |
@@ -452,6 +452,21 @@ extends:
                           }
                         }
                       ]
+                # Extract signed installer, overwriting the unsigned installer
+                - task: Bash@3
+                  displayName: 'Extract signed installer package'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      unzip -uo $(Build.ArtifactStagingDirectory)/tosign/installers-presign.zip -d $(Build.ArtifactStagingDirectory)/installers
+                - task: Bash@3
+                  displayName: 'Prepare installer package for notarization'
+                  inputs:
+                    targetType: inline
+                    script: |
+                      mkdir -p $(Build.ArtifactStagingDirectory)/tosign
+                      cd $(Build.ArtifactStagingDirectory)/installers
+                      zip -rX $(Build.ArtifactStagingDirectory)/tosign/installers.zip *.pkg
                 - task: EsrpCodeSigning@5
                   condition: and(succeeded(), eq('${{ parameters.esrp }}', true))
                   displayName: 'Notarize installer package'
